@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Cookie;
 
 class StoreController extends Controller
 {
-    private $ttl = 5;
+    private $timeLimit = 5;
 
     public function index(Request $request)
     {
@@ -18,7 +18,7 @@ class StoreController extends Controller
         $ttl = Cookie::get('ttl');
 
         // checking if TTL is 5min or less
-        if (Carbon::now()->diffInMinutes(Carbon::parse($ttl)) <= $this->ttl) {
+        if (Carbon::now()->diffInMinutes(Carbon::parse($ttl)) <= $this->timeLimit) {
             $data = collect(json_decode(Cookie::get('keys')));
 
             if ($request->query('keys')) {
@@ -35,6 +35,9 @@ class StoreController extends Controller
 
             //set TTL counter
             setcookie('ttl', Carbon::now());
+        } else {
+            //clear existing values forcefully
+            \cookie()->forget('keys');
         }
 
         return response()->json([
@@ -51,14 +54,14 @@ class StoreController extends Controller
         }
 
         // set data here
-        setcookie('keys', json_encode($keys), $this->ttl);
+        setcookie('keys', json_encode($keys), $this->timeLimit);
 
         //set TTL counter
         setcookie('ttl', Carbon::now());
 
         return response()->json([
             'message' => "Values are stored.",
-            'expires_in' => $this->ttl * 60,
+            'expires_in' => $this->timeLimit * 60,
             'data' => $keys,
         ], 201);
     }
